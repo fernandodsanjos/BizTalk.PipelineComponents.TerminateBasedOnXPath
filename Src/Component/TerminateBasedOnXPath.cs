@@ -52,7 +52,7 @@ namespace Shared.PipelineComponents
                 if (xPathReader.Match(0))
                 {
                     terminate = false;
- 
+                    inboundStream.Seek(0, SeekOrigin.Begin);
                     break;
                 }
             }
