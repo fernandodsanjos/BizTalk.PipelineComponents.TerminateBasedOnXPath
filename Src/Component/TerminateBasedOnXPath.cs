@@ -19,24 +19,21 @@ namespace Shared.PipelineComponents
     public partial class TerminateBasedOnXPath : IComponent, IBaseComponent, IPersistPropertyBag, IComponentUI
     {
        
-        private const string XPathPropertyName = "XPath";
-       
 
         [DisplayName("XPath")]
-        [Description("The XPath to be evaluated")]
+        [Description("The XPath to evaluated")]
         [RequiredRuntime]
         public string XPath { get; set; }
 
-       
-
+      
         public IBaseMessage Execute(IPipelineContext pContext, IBaseMessage pInMsg)
         {
            
-            bool terminate = true;
-
             IBaseMessagePart bodyPart = pInMsg.BodyPart;
 
-           
+            bool found = false;
+            string value = string.Empty;
+            string evalString = string.Empty;
 
             Stream inboundStream = bodyPart.GetOriginalDataStream();
             VirtualStream virtualStream = new VirtualStream(VirtualStream.MemoryFlag.AutoOverFlowToDisk);
@@ -45,20 +42,61 @@ namespace Shared.PipelineComponents
             XmlTextReader xmlTextReader = new XmlTextReader(readOnlySeekableStream);
             XPathCollection xPathCollection = new XPathCollection();
             XPathReader xPathReader = new XPathReader(xmlTextReader, xPathCollection);
+
+            int lastxpath = XPath.LastIndexOf("][");
+
+            if(lastxpath > -1)
+            {
+                evalString = XPath.Substring(lastxpath + 2, XPath.LastIndexOf(']') - (lastxpath + 2));
+                XPath = XPath.Substring(0, lastxpath + 1);
+
+                if (evalString.Contains("text(") || evalString.Contains("number("))
+                {
+                    evalString = evalString.Substring(evalString.IndexOf(')') + 1);
+
+                }
+
+                evalString = replaceHTMLOpearators(evalString);
+
+                if (evalString.Contains(" = "))//c# equal sign
+                    evalString = evalString.Replace("=", "==");
+
+            }
+
             xPathCollection.Add(XPath);
 
             while (xPathReader.ReadUntilMatch())
             {
                 if (xPathReader.Match(0))
                 {
-                    terminate = false;
+                    if (evalString != string.Empty)
+                    {
+                        if (xPathReader.NodeType == XmlNodeType.Attribute)
+                        {
+                            value = xPathReader.GetAttribute(xPathReader.Name);
+                        }
+                        else
+                        {
+                            value = xPathReader.ReadString();
+                        }
+
+                        string literal = String.Empty;
+                        if (evalString.Contains("'"))
+                            literal = "'";
+
+                        found = ScriptExpressionHelper.ValidateExpression(String.Format("{0}{1}{0}", literal, value), evalString);
+
+                    }
+                    else
+                        found = true;
+
+
                     inboundStream.Seek(0, SeekOrigin.Begin);
                     break;
                 }
             }
 
-           
-            if( terminate == true)
+            if(found)
             {
                 pInMsg = null;
             }
@@ -67,15 +105,70 @@ namespace Shared.PipelineComponents
             return pInMsg;
         }
 
+        private string replaceHTMLOpearators(string evalString)
+        {
+            if (evalString.Contains("&lt;"))
+               evalString = evalString.Replace("&lt;", "<");
+
+            if (evalString.Contains("&gt;"))
+                evalString = evalString.Replace("&gt;", ">");
+
+            if (evalString.Contains("&eq;"))
+                evalString = evalString.Replace("&eq;", "==");
+
+            if (evalString.Contains("&ne;"))
+                evalString = evalString.Replace("&ne;", "!=");
+
+            if (evalString.Contains("&ge;"))
+                evalString = evalString.Replace("&ge;", ">=");
+
+            if (evalString.Contains("&le;"))
+                evalString = evalString.Replace("&le;", "<=");
+        
+
+            return evalString;
+        }
+
+        //Load and Save are generic, the functions create properties based on the components "public" "read/write" properties.
         public void Load(IPropertyBag propertyBag, int errorLog)
         {
-            XPath = PropertyBagHelper.ReadPropertyBag(propertyBag, XPathPropertyName, XPath);
-         
+            var props = this.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+            foreach (var prop in props)
+
+            {
+
+                if (prop.CanRead & prop.CanWrite)
+
+                {
+
+                    prop.SetValue(this, PropertyBagHelper.ReadPropertyBag(propertyBag, prop.Name, prop.GetValue(this)));
+
+                }
+
+            }
+
+
         }
 
         public void Save(IPropertyBag propertyBag, bool clearDirty, bool saveAllProperties)
         {
-            PropertyBagHelper.WritePropertyBag(propertyBag, XPathPropertyName, XPath);
+            var props = this.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+
+            foreach (var prop in props)
+
+            {
+
+                if (prop.CanRead & prop.CanWrite)
+
+                {
+
+                    PropertyBagHelper.WritePropertyBag(propertyBag, prop.Name, prop.GetValue(this));
+
+                }
+
+            }
+
         }
     }
 }

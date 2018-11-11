@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+	<metadata>
+		<id>Shared.PipelineComponents.TerminateBasedOnXPath</id>
+		<version>1.0.0.1</version>
+		<authors>Fernando Pires</authors>
+		<owners>Fernando</owners>
+    <projectUrl>https://github.com/fernandodsanjos/BizTalk.PipelineComponents.TerminateBasedOnXPath</projectUrl>
+		<requireLicenseAcceptance>false</requireLicenseAcceptance>
+		<description>Terminates a message based on xpath expression</description>
+	</metadata>
+	<files>
+		<file src="bin\debug\Shared.PipelineComponents.TerminateBasedOnXPath.dll" target="lib\net46" />
+	</files>
+</package>
