@@ -83,6 +83,7 @@
     <Compile Include="TerminateBasedOnXPath.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="readme.md" />
     <None Include="Shared.PipelineComponents.TerminateBasedOnXPath.nuspec" />
     <None Include="key.snk" />
   </ItemGroup>
