@@ -82,7 +82,10 @@ namespace Shared.PipelineComponents
 
                         string literal = String.Empty;
                         if (evalString.Contains("'"))
-                            literal = "'";
+                        {
+                            literal = "\"";
+                            evalString = evalString.Replace("'", "\"");
+                        }
 
                         found = ScriptExpressionHelper.ValidateExpression(String.Format("{0}{1}{0}", literal, value), evalString);
 
@@ -91,17 +94,20 @@ namespace Shared.PipelineComponents
                         found = true;
 
 
-                    inboundStream.Seek(0, SeekOrigin.Begin);
+                    
                     break;
                 }
             }
 
-            if(found)
+            readOnlySeekableStream.Seek(0, SeekOrigin.Begin);
+            pInMsg.BodyPart.Data = readOnlySeekableStream;
+
+            if (found)
             {
                 pInMsg = null;
             }
-           
 
+           
             return pInMsg;
         }
 
